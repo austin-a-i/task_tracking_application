@@ -10,8 +10,8 @@ import com.springboot.tasktrackingapplication.exceptions.NameNotFoundException;
 public class UserConverter {
 
 	public User convertDtotoEntity(UserRequestDTO userRequest){ 
-		if(userRequest.getName() != null) {
-			 User userResponse = new User(userRequest.getName(), userRequest.getEmail()
+		if(userRequest.getUsername() != null) {
+			 User userResponse = new User(userRequest.getUsername(), userRequest.getEmail()
 																	, userRequest.getPassword());
 
 			 return userResponse;

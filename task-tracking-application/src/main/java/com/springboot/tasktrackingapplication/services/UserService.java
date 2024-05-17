@@ -28,6 +28,7 @@ public class UserService implements UserDetailsService{
 	private UserConverter userConverter;
 
 	public String addUser(UserRequestDTO userRequest) {
+		log.info("Request {}", userRequest.toString());
 		User user = userConverter.convertDtotoEntity(userRequest);
 		userRepository.save(user);	
 		return "User " + user.getUsername() + " has been registered successfully ";
