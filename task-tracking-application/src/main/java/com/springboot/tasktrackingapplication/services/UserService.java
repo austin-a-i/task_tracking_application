@@ -1,60 +1,102 @@
 package com.springboot.tasktrackingapplication.services;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.springboot.tasktrackingapplication.converters.UserConverter;
+import com.springboot.tasktrackingapplication.dtos.requests.UserLoginRequestDTO;
 import com.springboot.tasktrackingapplication.dtos.requests.UserRequestDTO;
+import com.springboot.tasktrackingapplication.dtos.responses.UserLoginResponseDTO;
 import com.springboot.tasktrackingapplication.entity.User;
+import com.springboot.tasktrackingapplication.exceptions.ApiRequestException;
 import com.springboot.tasktrackingapplication.repository.UserRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class UserService implements UserDetailsService{
+public class UserService {
 	
 	@Autowired
 	private UserRepository userRepository;
 	
 	@Autowired
 	private UserConverter userConverter;
+	
+    @Autowired
+    private AuthenticationManager authenticationManager;
+	
+	public List<UserLoginResponseDTO> getAllUsers() {
+		log.info("Fetching all the Users");
+		List<User> userList = userRepository.findAll();
+		
+		return userList.stream()
+					.map((user)-> userConverter.mapToDTO(user))
+					.collect(Collectors.toList());
+	}
 
-	public String addUser(UserRequestDTO userRequest) {
+	public ResponseEntity<String> addUser(UserRequestDTO userRequest) {
 		log.info("Request {}", userRequest.toString());
-		User user = userConverter.convertDtotoEntity(userRequest);
-		userRepository.save(user);	
-		return "User " + user.getUsername() + " has been registered successfully ";
-	}
-
-	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<User>user = findByUsername(username);
-        if(user.isPresent()){
-            User newUser=user.get();
-            return new org.springframework.security.core.userdetails.User(
-                    newUser.getUsername(),
-                    newUser.getPassword(),
-                    newUser.getRoles().stream().map((role)->new SimpleGrantedAuthority(role))
-                    .collect(Collectors.toList())
-            );
-
+        User existingUser = userRepository.findByUsername(userRequest.getUsername());
+        if (existingUser != null) {
+            return ResponseEntity.badRequest().body("Username is already taken");
         }
-        throw new UsernameNotFoundException("User not found");
+        
+		User user = userConverter.convertDtotoEntity(userRequest);
+		
+		userRepository.save(user);	
+		return ResponseEntity.ok("User " + user.getUsername() + " has been registered successfully");
 	}
+	
+	
+	public UserLoginResponseDTO login(UserLoginRequestDTO request) throws ApiRequestException {
+		Authentication auth;
+		try {
+			UsernamePasswordAuthenticationToken token = 
+									new UsernamePasswordAuthenticationToken(request.getUsername()
+	        																,request.getPassword());
+	        log.info(request.getUsername()+":"+request.getPassword());
+	        auth = authenticationManager.authenticate(token);
+	        log.info(auth + " value");
+			
+		} catch (BadCredentialsException ex) {
+            throw new ApiRequestException("Credentials are not valid!");
+        }
+		
+		// Insert username and password into context
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        User user = (User) auth.getPrincipal();
+        
+		List<GrantedAuthority>roles = (List<GrantedAuthority>)auth.getAuthorities();
+        List<String>rolesResponse = roles.stream().map((authority)->authority.getAuthority())
+        										  .collect(Collectors.toList());
+        log.info("rolesResponse: " + rolesResponse.toString());
+        UserLoginResponseDTO response = new UserLoginResponseDTO(user.getId(), 
+        													user.getUsername(), rolesResponse);
+        log.info("Response: " + response.toString());
+        
+		return response;
 
-	private Optional<User> findByUsername(String username) {
-        log.info("Getting user with the username " + username);
-        return userRepository.findByUsername(username);
 	}
 	
-	
+    public UserLoginResponseDTO findByUsername(String username) throws ApiRequestException {
+        try {
+            User user = userRepository.findByUsername(username);
+            return new UserLoginResponseDTO(user);
+        } catch (UsernameNotFoundException e) {
+            throw new ApiRequestException("User with username '" + username + "' doesn't exist.");
+        }
+    }
 
 }

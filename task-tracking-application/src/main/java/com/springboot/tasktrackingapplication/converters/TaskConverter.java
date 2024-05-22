@@ -1,7 +1,6 @@
 package com.springboot.tasktrackingapplication.converters;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
@@ -14,14 +13,15 @@ import com.springboot.tasktrackingapplication.entity.User;
 @Component
 public class TaskConverter {
  
-	public Task convertDtotoEntity(Optional<User> user, TaskRequestDTO request) {
+	public Task convertDtotoEntity(TaskRequestDTO request) {
+		
 		Task taskResponse = Task.builder()
-								.user((List<User>) user.get())
 								.task(request.getTask())
 								.description(request.getDescription())
 								.dueDate(request.getDueDate())
 								.status(Status.IN_PROGRESS)
 								.build();
+	    
 		return taskResponse;
 	}
 
@@ -29,6 +29,7 @@ public class TaskConverter {
 		
 		return TaskResponseDTO.builder()
 							.taskId(savedTask.getId())
+							.user(savedTask.getUser())
 							.task(savedTask.getTask())
 							.description(savedTask.getDescription())
 							.dueDate(savedTask.getDueDate())

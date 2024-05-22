@@ -1,8 +1,9 @@
 package com.springboot.tasktrackingapplication.entity;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,6 +36,7 @@ public class Task {
 	
 
 	@ManyToMany(mappedBy = "tasks")
-    private List<User> user = new ArrayList<>();;
+	@JsonIgnore
+    private Set<User> user;
 	
 }
