@@ -1,12 +1,8 @@
-package com.springboot.tasktrackingapplication.dtos.responses;
+package com.springboot.tasktrackingapplication.dtos.requests;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.springboot.tasktrackingapplication.entity.Status;
-import com.springboot.tasktrackingapplication.entity.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,10 +13,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TaskResponseDTO {
+public class UpdateTaskDetailsRequestDTO {
 	
-	private long taskId;
 	private String username;
+	/*
+	 task shouldn't change since we are looking into repository using task name 
+		and if changed will throw a TaskRetrievalException stating no such Task Found
+	*/
 	private String task;
 	private String description;
 	private LocalDate dueDate;

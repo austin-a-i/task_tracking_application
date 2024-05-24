@@ -1,11 +1,14 @@
 package com.springboot.tasktrackingapplication.entity;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -17,10 +20,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
@@ -48,12 +54,11 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "Authority_Id", referencedColumnName = "id"))
     private List<Authority> authorities;
 
-	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinTable(name = "User_Task",
-			joinColumns = @JoinColumn(name = "User_Id"), 
-			inverseJoinColumns = @JoinColumn(name = "Task_ID"))
+	@EqualsAndHashCode.Exclude
+	@ToString.Exclude
+	@OneToMany(mappedBy = "user", fetch = FetchType.EAGER)
 	@JsonIgnore
-    private Set<Task> tasks;
+    private Set<Task> tasks= new HashSet<Task>();
 	
 	public User(String username, String email, String password) {
 		super();
@@ -98,6 +103,11 @@ public class User implements UserDetails {
     public boolean isCredentialsNonExpired() {
         return true;
     }
+
+	/*
+	 * @Override public String toString() { return "User [id=" + id + ", username="
+	 * + username + "]"; }
+	 */
 	
 	/*
 	{

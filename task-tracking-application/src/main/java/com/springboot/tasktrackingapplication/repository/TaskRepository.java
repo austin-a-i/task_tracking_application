@@ -15,6 +15,17 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 	
 	List<Task> findByUser(User user);
 	
-	@Query(value = "SELECT ta FROM Task ta JOIN ta.user u WHERE ta.task = ':task' AND u.username = ':username'")
-	Task findByTaskAndUser(@Param("task") String task, @Param("username") String username);
+	@Query(value = "SELECT t.* FROM task t JOIN user u ON t.user_id = u.id", nativeQuery = true)		
+	List<Task> findallTasks();
+	
+	@Query(value = "SELECT t.* FROM task t where t.task = :task", nativeQuery = true)
+	List<Task> findUsersByTask(@Param("task") String task);
+	
+	@Query(value = "SELECT t.* FROM task t JOIN user u ON t.user_id = u.id "
+											+ "WHERE u.username = :username", nativeQuery = true)
+	List<Task> findTasksByUsername(@Param("username") String username);
+	
+	@Query(value = "SELECT t.* FROM task t JOIN user u ON t.user_id = u.id "
+			+ "WHERE u.username = :username and t.task = :task", nativeQuery = true)
+	Task findTaskFromUserTasks(@Param("username") String username, @Param("task") String task);
 }

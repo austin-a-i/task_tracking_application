@@ -2,6 +2,8 @@ package com.springboot.tasktrackingapplication.dtos.requests;
 
 import java.time.LocalDate;
 
+import com.springboot.tasktrackingapplication.entity.Status;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,5 +19,6 @@ public class TaskRequestDTO {
 	private String task;
 	private String description;
 	private LocalDate dueDate;
+	private Status status;
 	
 }

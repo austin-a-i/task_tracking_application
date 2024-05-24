@@ -3,6 +3,7 @@ package com.springboot.tasktrackingapplication.controllers;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.springboot.tasktrackingapplication.dtos.requests.TaskRequestDTO;
+import com.springboot.tasktrackingapplication.dtos.requests.UpdateTaskDetailsRequestDTO;
 import com.springboot.tasktrackingapplication.dtos.responses.TaskResponseDTO;
 import com.springboot.tasktrackingapplication.entity.Task;
+import com.springboot.tasktrackingapplication.exceptions.TaskCreationException;
 import com.springboot.tasktrackingapplication.services.TaskService;
 
 
@@ -29,29 +32,40 @@ public class TaskController {
 	private TaskService taskService;
 	
 	@GetMapping("/viewOne/{task}")
-	public ResponseEntity<TaskResponseDTO> viewTaskStatus(@PathVariable String task) {
-		TaskResponseDTO viewTask = taskService.getTaskStatus(task);
+	public ResponseEntity<List<Task>> viewTaskStatus(@PathVariable String task) {
+		List<Task> viewTask = taskService.getTaskStatus(task);
 		return new ResponseEntity<>(viewTask, HttpStatus.OK);
 	}
 	
 	@GetMapping("/viewAll")
+	@PreAuthorize("hasAuthority('ADMIN')")
 	public ResponseEntity<List<TaskResponseDTO>> viewAllTask() {
 		List<TaskResponseDTO> taskList = taskService.getAllTasks();
 		return new ResponseEntity<>(taskList, HttpStatus.OK);
 	}
 	
+	@GetMapping("/view/user/{username}")
+	public ResponseEntity<List<TaskResponseDTO>> viewAllTaskByUser(@PathVariable String username) {
+		List<TaskResponseDTO> userTaskList = taskService.getAllTasksByUser(username);
+		return new ResponseEntity<>(userTaskList, HttpStatus.OK);
+	}
+	
 	@PostMapping("/create")
-	//@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAuthority('ADMIN')")
 	public ResponseEntity<TaskResponseDTO> createTask(@RequestBody TaskRequestDTO taskRequest) {
+		try {
 		TaskResponseDTO taskResponse = taskService.saveTask(taskRequest);
 		return new ResponseEntity<>(taskResponse,HttpStatus.CREATED);
+		} catch (DataIntegrityViolationException e) {
+            throw new TaskCreationException(HttpStatus.CONFLICT, "Task name must be unique within a user	");
+		}
 		
 	}
 	
-	@PutMapping("/update/{name}")
-	//@PreAuthorize("hasRole('EDITOR') or hasRole('ADMIN')")
-	public Task updateTask() {
-		return null;
+	@PutMapping("/update")
+	@PreAuthorize("hasAuthority('ADMIN')")
+	public ResponseEntity<TaskResponseDTO> updateTask(@RequestBody UpdateTaskDetailsRequestDTO updateRequest) {
+		return new ResponseEntity<>(taskService.updateTask(updateRequest), HttpStatus.PARTIAL_CONTENT);
 	}
 	
 	@DeleteMapping("/delete/{}")

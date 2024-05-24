@@ -16,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.springboot.tasktrackingapplication.converters.TaskConverter;
 import com.springboot.tasktrackingapplication.dtos.requests.TaskRequestDTO;
+import com.springboot.tasktrackingapplication.dtos.requests.UpdateTaskDetailsRequestDTO;
 import com.springboot.tasktrackingapplication.dtos.responses.TaskResponseDTO;
 import com.springboot.tasktrackingapplication.entity.Task;
 import com.springboot.tasktrackingapplication.entity.User;
 import com.springboot.tasktrackingapplication.exceptions.NameNotFoundException;
 import com.springboot.tasktrackingapplication.exceptions.TaskCreationException;
+import com.springboot.tasktrackingapplication.exceptions.TaskRetrievalException;
 import com.springboot.tasktrackingapplication.repository.TaskRepository;
 import com.springboot.tasktrackingapplication.repository.UserRepository;
 
@@ -48,22 +50,43 @@ public class TaskService {
     
 	public List<TaskResponseDTO> getAllTasks() {
 		log.info("Fetching all the Tasks");
-		List<Task> allTasks = taskRepository.findAll();
+		List<Task> allTasks = taskRepository.findallTasks();
+		log.info("All tasks- " + allTasks);
 		List<TaskResponseDTO> allTaskList = allTasks.stream()
 												.map((allTask) -> taskConverter.mapToResponseDTO(allTask))
 												.collect(Collectors.toList());
 		return allTaskList;
 	}
-
-	public TaskResponseDTO getTaskStatus(String task) {
-		User user = getCurrentUser();
-		
-		if(user != null) {
-			Task viewTask = taskRepository.findByTaskAndUser(task, user.getUsername());
-			TaskResponseDTO getTask = taskConverter.mapToResponseDTO(viewTask);
-			return getTask;
-		}
-		throw new UsernameNotFoundException("No user found for the Task");
+	
+	public List<TaskResponseDTO> getAllTasksByUser(String username) {
+		User authUser = getCurrentUser();
+		if(authUser != null) {
+			String authUsername = authUser.getUsername();
+			String authority = authUser.getAuthorities().get(0).getAuthority();
+			log.info("username {} - {}", authUsername, authority);
+			if(authUsername.equalsIgnoreCase(username) 
+					|| authority.equalsIgnoreCase("ADMIN")) {
+				User userByUsername = userRepository.findByUsername(username);
+	    		if(userByUsername != null) {
+					log.info("Fetching all the Tasks By User " + username);
+					List<Task> allTasksByUser = taskRepository.findTasksByUsername(username);
+					log.info("All tasks By user {} - {} ", username, allTasksByUser);
+					List<TaskResponseDTO> allTaskList = allTasksByUser.stream()
+															.map((allTask) -> taskConverter.mapToResponseDTO(allTask))
+															.collect(Collectors.toList());
+					return allTaskList;
+	    		}
+	    		throw new NameNotFoundException(HttpStatus.NOT_FOUND, "Username given not found");
+			}
+			throw new TaskRetrievalException(HttpStatus.FORBIDDEN, "This User cannot view Task status");
+	    }
+	    throw new TaskCreationException(HttpStatus.BAD_REQUEST, "User Not Authenticated");
+	}
+	
+	public List<Task> getTaskStatus(String task) {
+		List<Task> viewTask = taskRepository.findUsersByTask(task);
+		log.info("View Task" + viewTask);
+		return viewTask;
 	}
     
 	@Transactional
@@ -79,29 +102,21 @@ public class TaskService {
     		
     		User userByUsername = userRepository.findByUsername(taskRequest.getUsername());
     		if(userByUsername != null) {
-    			Task task = taskConverter.convertDtotoEntity(taskRequest);
-
+    			Task task = taskConverter.convertDtotoEntityCreated(taskRequest);
+    			
 	    	    // Initialize the users set if it is null
 	    	    if (task.getUser() == null) {
-	    	    	task.setUser(new HashSet<>());
+	    	    	task.setUser(userByUsername);
 	    	    }
-	    	    // Add the user to the task's users set
-	    	    task.getUser().add(userByUsername);
+    			log.debug("task-" + task);
+    		    taskRepository.save(task);
 	    	    
-	        	Task savedTask = taskRepository.save(task);
-        	    userRepository.save(userByUsername);
-	        	
-	        	TaskResponseDTO taskResponse = taskConverter.mapToResponseDTO(savedTask);
-	        	
+	
+	        	TaskResponseDTO taskResponse = taskConverter.mapToResponseDTO(task);
+	        	//taskResponse.setUsername(userByUsername.getUsername());
     	    
 	        	/*
-        	    // Initialize the user's tasks set if it is null
-        	    if (userByUsername.getTasks() == null) {
-        	    	userByUsername.setTasks(new HashSet<>());
-        	    }
-        	    
-        	    // Add the task to the user's tasks set
-        	    userByUsername.getTasks().add(task);
+
         	    */
         	    return taskResponse;
     	    }
@@ -109,6 +124,22 @@ public class TaskService {
         	
         }
         throw new TaskCreationException(HttpStatus.BAD_REQUEST, "Not Authenticated");
+	}
+
+	public TaskResponseDTO updateTask(UpdateTaskDetailsRequestDTO request) {
+		User user = userRepository.findByUsername(request.getUsername());
+		if(user != null) {
+			Task updateTask = taskRepository.findTaskFromUserTasks(user.getUsername(), request.getTask());
+			if(updateTask != null) {
+				taskConverter.updateTaskDetails(request, updateTask);
+				taskRepository.save(updateTask);
+				
+	        	TaskResponseDTO taskResponse = taskConverter.mapToResponseDTO(updateTask);
+				return taskResponse;
+			}
+			throw new TaskRetrievalException(HttpStatus.NOT_FOUND, "Task not found for this User");
+		}
+		throw new NameNotFoundException(HttpStatus.NOT_FOUND, "Username in request not found");
 	}
 
 }
