@@ -1,13 +1,9 @@
 # task_tracking_application      
 
  Task Tracking Application :  -     
-Built a task tracking application for managing tasks and implemented CRUD operations to create, view, update, and delete tasks for the users.     
+Built a task tracking application for managing tasks and implemented CRUD operations to create, view, update, and delete tasks for the users.         
 
---------------------------------------------------------
-Requirements completed      
--------------------------------------------------------     
-
-1. Setup: 
+1. Setup:      
 ○ Created a new Spring Boot project using Spring Initializr using Java 21 and maven.      
 ○ Included dependencies for Spring Web, Spring Security, Spring Data JPA, and MySQL Driver.    
   
@@ -48,40 +44,43 @@ User    (Bypassed Authentication  -  Unauthorized)
 
 /user/register - For Adding User - ADMIN     
 
-
-Body-     
-	{
-	        "username":"johan14",
-	        "email":"johan14@gmail.com",
-	        "password":"1234",
-      	    	"enabled": true,
-	        "authorities": ["ADMIN"]
-
-	}
+Body -     
+```    
+	{     
+	        "username":"johan14",  
+	        "email":"johan14@gmail.com",  
+	        "password":"1234",  
+      	    	"enabled": true,  
+	        "authorities": ["ADMIN"]  
+	}  
+```
 
 /user/register - For Adding User - USER     
 	
 N.B - If no authority is given on registration - given USER access by default     
-Body -      
 
-	{
-	        "username":"jane13",
-	        "email":"jane13@gmail.com",
-	        "password":"1234",
-      	    	"enabled":true,
-	        "authorities": ["USER"]
+Body -   
+```      
+	{  
+	        "username":"jane13",  
+	        "email":"jane13@gmail.com",  
+	        "password":"1234",  
+      	    	"enabled": true,  
+	        "authorities": ["USER"]  
 	}       
-
+```   
 
 
  /user/login - For logging into useraccount    
 		Throws ApiRequestException on bad credentials login    
- 
-Body -
-	{
-	        "username":"austin14",
-	        "password":"1234"
-	}       
+
+Body - 
+```   
+	{   
+	        "username":"austin14",  
+	        "password":"1234"  
+	}        
+```
 
 
 ------
@@ -94,13 +93,16 @@ Create Task  - POST http://localhost:8080/tasks/create
 ADMIN authorised i.e, only ADMIN can create tasks.      
 
 Body -    
-{
-  "username": "jane13",
-  "task": "Interview5",
-  "description": "Do Interview",
-  "dueDate": "2024-05-26",
-  "status":"IN_PROGRESS"
-}     
+```    
+{   
+  "username": "jane13",   
+  "task": "Interview5",   
+  "description": "Do Interview",   
+  "dueDate": "2024-05-26",   
+  "status":"IN_PROGRESS"   
+}   
+```    
+   
 
 
 N.B - Due date must be past the current date or throws TaskCreationException.    
@@ -114,24 +116,29 @@ ADMIN authorised i.e, only ADMIN can update task details.
  N.B - Since update is based on taskname and not task_id,    
   		DO NOT CHANGE username and task values while updating task.       
 
-Body-    
-{
-  "username": "jane13",
-  "task": "Interview1",
-  "description": "Do Interview 1",
-  "dueDate": "2024-05-27",
-  "status": "EXTENDED"
-}        
+Body-   
+```   
+{  
+  "username": "jane13",  
+  "task": "Interview1",  
+  "description": "Do Interview 1",   
+  "dueDate": "2024-05-27",   
+  "status": "EXTENDED"   
+}     
+```       
 
 
 ---
 View All Tasks     - GET   http://localhost:8080/tasks/viewAll       
 
 To view all tasks created by all users - ADMIN authorised    
-    
+
+curl   
+```         
 curl -i -X GET \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
  'http://localhost:8080/tasks/viewAll'     
+```    
 
 
 ---
@@ -141,55 +148,64 @@ To view the tasks based on the username given - All users are authorised but aut
 N.B - The user(authority USER) can view their tasks by their username. If the user is trying to access tasks of any other users, it will throw a TaskRetrievalException.       
 Only the ADMIN can access tasks of other users.          
 
+curl    
+```    
 curl -i -X GET \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
- 'http://localhost:8080/tasks/view/user/jane13'       
+ 'http://localhost:8080/tasks/view/user/jane13'  
+```   
+   
      
 ---
 View Task Details by Taskname     - GET http://localhost:8080/tasks/viewOne/{taskname}        
 Get Task  details by taskname - Gives all task details from all users having the same taskname      
 
+curl
+```    
 curl -i -X GET \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
  'http://localhost:8080/tasks/viewOne/Interview1'         
+```
 
 
 ---
 Delete Task by task_Id     - DELETE   http://localhost:8080/tasks/delete/{taskid}    
 
+curl
+```    
 curl -i -X DELETE \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
  'http://localhost:8080/tasks/delete/13'      
+```
 
 
 
-----------------------------------
-
+----------------------------------  
 Curls
+----------------------------------  
 
-----------------------------------
 ------------------------
 User curls         (Not Authenticated/Authorised APIs i.e, anyone can use)
 ------------------------
 
-Register - ADMIN      
-  
+Register - ADMIN   
+```      
  curl -i -X POST \
    -H "Content-Type:application/json" \
    -d \
-'	{
-	        "username":"johan14",
-	        "email":"johan14@gmail.com",
-	        "password":"1234",
-      	    	"enabled":true,
-	        "authorities": ["ADMIN"]
+'	{  
+	        "username":"johan14",  
+	        "email":"johan14@gmail.com",  
+	        "password":"1234",  
+      	    	"enabled":true,   
+	        "authorities": ["ADMIN"]  
 
 	}' \
- 'http://localhost:8080/user/register'       
-
-Register - USER      
-
-   
+ 'http://localhost:8080/user/register'     
+```    
+  
+Register - USER    
+```      
 curl -i -X POST \
    -H "Content-Type:application/json" \
    -d \
@@ -200,12 +216,11 @@ curl -i -X POST \
       	    	"enabled":true,
 	        "authorities": ["USER"]
 	}' \
- 'http://localhost:8080/user/register'       
+ 'http://localhost:8080/user/register'    
+```   
 
-
-
-LogIn       
-
+LogIn   
+```       
 curl -i -X POST \
    -H "Content-Type:application/json" \
    -d \
@@ -213,8 +228,8 @@ curl -i -X POST \
 	        "username":"austin14",
 	        "password":"1234"
 	}' \
- 'http://localhost:8080/user/login'     
-
+ 'http://localhost:8080/user/login'   
+```   
 
 
 
@@ -222,62 +237,68 @@ curl -i -X POST \
 Task Curls       (Authorization Header required)
 ---------------------------      
 
-Create Task      
-
-curl -i -X POST \
-   -H "Content-Type:application/json" \
-   -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
+Create Task
+```      
+curl -i -X POST \  
+   -H "Content-Type:application/json" \  
+   -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \  
    -d \
-'{
-  "username": "jane13",
-  "task": "Interview5",
-  "description": "Do Interview",
-  "dueDate": "2024-05-26"
+'{  
+  "username": "jane13",  
+  "task": "Interview5",  
+  "description": "Do Interview",  
+  "dueDate": "2024-05-26"  
 }' \
- 'http://localhost:8080/tasks/create'        
+ 'http://localhost:8080/tasks/create'         
+```  
 
-
-Update Task         
-
+Update Task   
+```         
 curl -i -X PUT \
    -H "Content-Type:application/json" \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
    -d \
-'{
-  "username": "jane13",
-  "task": "Interview1",
-  "description": "Do Interview 1",
-  "dueDate": "2024-05-27",
-  "status": "DUE"
+'{  
+  "username": "jane13",  
+  "task": "Interview1",   
+  "description": "Do Interview 1",   
+  "dueDate": "2024-05-27",  
+  "status": "DUE"  
 }' \
- 'http://localhost:8080/tasks/update'         
+ 'http://localhost:8080/tasks/update'           
 
+```
 
-
-View All Tasks       
-
+View All Tasks
+```    
 curl -i -X GET \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
- 'http://localhost:8080/tasks/viewAll'     
+ 'http://localhost:8080/tasks/viewAll'   
+```  
 
-View All Tasks By Username       
-
+  
+View All Tasks By Username   
+```      
 curl -i -X GET \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
  'http://localhost:8080/tasks/view/user/jane13'      
+```
 
-View Task Details by Taskname     
-
+View Task Details by Taskname  
+```   
 curl -i -X GET \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
- 'http://localhost:8080/tasks/viewOne/Interview1'      
-
-
-Delete Task by ID    
-
+ 'http://localhost:8080/tasks/viewOne/Interview1'     
+```
+ 
+Delete Task by ID
+```    
 curl -i -X DELETE \
    -H "Authorization:Basic YXVzdGluMTQ6MTIzNA==" \
  'http://localhost:8080/tasks/delete/13'       
+```
+
+
 
 
 
