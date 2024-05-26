@@ -18,6 +18,7 @@ import com.springboot.tasktrackingapplication.converters.UserConverter;
 import com.springboot.tasktrackingapplication.dtos.requests.UserLoginRequestDTO;
 import com.springboot.tasktrackingapplication.dtos.requests.UserRequestDTO;
 import com.springboot.tasktrackingapplication.dtos.responses.UserLoginResponseDTO;
+import com.springboot.tasktrackingapplication.entity.Authority;
 import com.springboot.tasktrackingapplication.entity.User;
 import com.springboot.tasktrackingapplication.exceptions.ApiRequestException;
 import com.springboot.tasktrackingapplication.repository.UserRepository;
@@ -48,15 +49,18 @@ public class UserService {
 
 	public ResponseEntity<String> addUser(UserRequestDTO userRequest) {
 		log.info("Request {}", userRequest.toString());
-        User existingUser = userRepository.findByUsername(userRequest.getUsername());
-        if (existingUser != null) {
-            return ResponseEntity.badRequest().body("Username is already taken");
-        }
-        
-		User user = userConverter.convertDtotoEntity(userRequest);
-		
-		userRepository.save(user);	
-		return ResponseEntity.ok("User " + user.getUsername() + " has been registered successfully");
+		if(userRequest.getUsername()!= null) {
+	        User existingUser = userRepository.findByUsername(userRequest.getUsername());
+	        if (existingUser != null) {
+	            return ResponseEntity.badRequest().body("Username is already taken");
+	        }
+	        
+			User user = userConverter.convertDtotoEntity(userRequest);
+			
+			userRepository.save(user);	
+			return ResponseEntity.ok("User " + user.getUsername() + " has been registered successfully");
+		}
+		throw new UsernameNotFoundException("No username found in request");
 	}
 	
 	
@@ -77,10 +81,10 @@ public class UserService {
 		// Insert username and password into context
         SecurityContextHolder.getContext().setAuthentication(auth);
         User user = (User) auth.getPrincipal();
-        
-		List<GrantedAuthority>roles = (List<GrantedAuthority>)auth.getAuthorities();
-        List<String>rolesResponse = roles.stream().map((authority)->authority.getAuthority())
-        										  .collect(Collectors.toList());
+
+        List<String>rolesResponse = user.getAuthorities().stream()
+										        		.map(Authority::getAuthority)
+														.collect(Collectors.toList());
         log.info("rolesResponse: " + rolesResponse.toString());
         UserLoginResponseDTO response = new UserLoginResponseDTO(user.getId(), 
         													user.getUsername(), rolesResponse);

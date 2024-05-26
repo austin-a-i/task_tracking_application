@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,6 +19,7 @@ import com.springboot.tasktrackingapplication.converters.TaskConverter;
 import com.springboot.tasktrackingapplication.dtos.requests.TaskRequestDTO;
 import com.springboot.tasktrackingapplication.dtos.requests.UpdateTaskDetailsRequestDTO;
 import com.springboot.tasktrackingapplication.dtos.responses.TaskResponseDTO;
+import com.springboot.tasktrackingapplication.entity.Status;
 import com.springboot.tasktrackingapplication.entity.Task;
 import com.springboot.tasktrackingapplication.entity.User;
 import com.springboot.tasktrackingapplication.exceptions.NameNotFoundException;
@@ -41,7 +43,7 @@ public class TaskService {
 	@Autowired
 	private TaskConverter taskConverter;
 	
-    private User getCurrentUser() {
+    public User getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         log.info("principal" + principal.toString());
         String username = ((UserDetails) principal).getUsername();
@@ -62,7 +64,7 @@ public class TaskService {
 		User authUser = getCurrentUser();
 		if(authUser != null) {
 			String authUsername = authUser.getUsername();
-			String authority = authUser.getAuthorities().get(0).getAuthority();
+			String authority = authUser.getAuthorities().getFirst().getAuthority();
 			log.info("username {} - {}", authUsername, authority);
 			if(authUsername.equalsIgnoreCase(username) 
 					|| authority.equalsIgnoreCase("ADMIN")) {
@@ -92,38 +94,29 @@ public class TaskService {
 	@Transactional
 	public TaskResponseDTO saveTask(TaskRequestDTO taskRequest) {
         log.info("Saving Task");
-        User authUser = getCurrentUser();
-        
-        if(authUser != null) {
-    		LocalDate today = LocalDate.now();
-    		if(! taskRequest.getDueDate().isAfter(today)) {
-    			throw new TaskCreationException(HttpStatus.BAD_REQUEST, "Due Date past the task created date");
-    		}
-    		
-    		User userByUsername = userRepository.findByUsername(taskRequest.getUsername());
-    		if(userByUsername != null) {
-    			Task task = taskConverter.convertDtotoEntityCreated(taskRequest);
-    			
-	    	    // Initialize the users set if it is null
-	    	    if (task.getUser() == null) {
-	    	    	task.setUser(userByUsername);
-	    	    }
-    			log.debug("task-" + task);
-    		    taskRepository.save(task);
-	    	    
-	
-	        	TaskResponseDTO taskResponse = taskConverter.mapToResponseDTO(task);
-	        	//taskResponse.setUsername(userByUsername.getUsername());
-    	    
-	        	/*
+		LocalDate today = LocalDate.now();
+		if(taskRequest.getDueDate().isBefore(today)) {
+			throw new TaskCreationException(HttpStatus.BAD_REQUEST, "Due Date past the task created date");
+		}
 
-        	    */
-        	    return taskResponse;
-    	    }
-    		throw new NameNotFoundException(HttpStatus.NOT_FOUND, "Username in request not found");
-        	
-        }
-        throw new TaskCreationException(HttpStatus.BAD_REQUEST, "Not Authenticated");
+		User userByUsername = userRepository.findByUsername(taskRequest.getUsername());
+		if(userByUsername != null) {
+			Task task = taskConverter.convertDtotoEntityCreated(taskRequest);
+
+			// Initialize the users set if it is null
+			if (task.getUser() == null) {
+				task.setUser(userByUsername);
+			}
+			log.debug("task-" + task);
+			taskRepository.save(task);
+
+
+			TaskResponseDTO taskResponse = taskConverter.mapToResponseDTO(task);
+			//taskResponse.setUsername(userByUsername.getUsername());
+
+			return taskResponse;
+		}
+		throw new NameNotFoundException(HttpStatus.NOT_FOUND, "Username in request not found");
 	}
 
 	public TaskResponseDTO updateTask(UpdateTaskDetailsRequestDTO request) {
@@ -141,5 +134,25 @@ public class TaskService {
 		}
 		throw new NameNotFoundException(HttpStatus.NOT_FOUND, "Username in request not found");
 	}
+	
+	public boolean deleteTask(Long taskId) {
+		if(taskRepository.existsById(taskId)) {
+			taskRepository.deleteById(taskId);
+			return true;
+		}
+		return false;
+	}
+	
+   @Transactional
+   public void updatePastDueTasks() {
+        LocalDate currentDate = LocalDate.now();
+        List<Task> pastDueTasks = taskRepository.findPastDueTasks(currentDate);
+        log.info("pastDueTasks - ", pastDueTasks);
+        for (Task task : pastDueTasks) {
+            task.setStatus(Status.DUE);
+        }
+
+        taskRepository.saveAll(pastDueTasks);
+    }
 
 }

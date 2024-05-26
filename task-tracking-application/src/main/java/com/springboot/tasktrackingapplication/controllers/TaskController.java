@@ -57,7 +57,7 @@ public class TaskController {
 		TaskResponseDTO taskResponse = taskService.saveTask(taskRequest);
 		return new ResponseEntity<>(taskResponse,HttpStatus.CREATED);
 		} catch (DataIntegrityViolationException e) {
-            throw new TaskCreationException(HttpStatus.CONFLICT, "Task name must be unique within a user	");
+            throw new TaskCreationException(HttpStatus.CONFLICT, "Task name must be unique within a user");
 		}
 		
 	}
@@ -68,10 +68,14 @@ public class TaskController {
 		return new ResponseEntity<>(taskService.updateTask(updateRequest), HttpStatus.PARTIAL_CONTENT);
 	}
 	
-	@DeleteMapping("/delete/{}")
-	//@PreAuthorize("hasRole('ADMIN')")
-	public String deleteTask() {
-		return null;
+	@DeleteMapping("/delete/{taskId}")
+	@PreAuthorize("hasAuthority('ADMIN')")
+	public ResponseEntity<String> deleteTask(@PathVariable Long taskId) {
+		boolean deleteTask = taskService.deleteTask(taskId);
+		if (!deleteTask) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Task not found");
+		}
+		return ResponseEntity.status(HttpStatus.OK).body("Task deleted successfully");
 	}
 
 }
